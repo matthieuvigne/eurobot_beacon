@@ -33,9 +33,10 @@ to see a graphical test of the boards.
 
  - **Documentation:** the full documentation of the system. It describes the design ideas beind these boards, as well
  as necessary informations to use the reciever (sensor layout, I2C register mapping).
- - **Electronics:** the schematics and PCBs of the emitter and the reciever, designed using the free software
- [Designspark 8.0](https://www.rs-online.com/designspark/pcb-download-and-installation)
- - **BeaconCode:** both the emitter and the reciever contain an ATTiny microntroller, whose code is contained is this folder.
+ - **Electronics:** the schematics and PCBs of the emitter and the receiver, designed using the free software
+ [Designspark 8.0](https://www.rs-online.com/designspark/pcb-download-and-installation). A third PCB is provided, an ATTiny
+ programmer board to flash this code using an Arduino.
+ - **BeaconCode:** both the emitter and the receiver contain an ATTiny microntroller, whose code is contained is this folder.
  - **BeagleboneDemo:** a gui demo of the beacon. This demo was written and tested on a Beaglebone Black board, but with
  minimal adaptation should work for a Raspberry Pi as well. Simply plug the reciever, and watch graphically its full status
  in real time.

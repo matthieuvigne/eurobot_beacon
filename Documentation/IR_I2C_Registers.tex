@@ -15,7 +15,7 @@
 
 \newcolumntype{Y}{>{\centering\arraybackslash}X}
 
-\title{I2C register definition for infrared reciever}
+\title{I2C register definition for infrared receiver}
 \author{Matthieu Vigne}
 \date{April 2017}
 
@@ -26,7 +26,7 @@
 
 \begin{abstract}
   
-\indent \par The infrared detection system built this year to detect the opponent's robots uses I2C communication to relay information to the master (the Beaglebone). The microcontroller on the infrared receiver circuit (an ATtiny841) is thus an I2C slave, and a list of registers for this slave must be defined. This document is the only reference for the register definition: the microcontroller code MUST correspond to the content of this document. Any change in the register definition must be referenced in this document.
+\indent \par The IR receiver circuit uses I2C communication to relay information to the master processor. The microcontroller on the infrared receiver circuit (an ATtiny841) is thus an I2C slave, and a list of registers for this slave must be defined. This document acts as reference for the register definition: the microcontroller code MUST correspond to the content of this document. Any change in the register definition must be referenced in this document.
 \par At the end of this document, some information is also provided to help in the understanding of the source code of both the emitter and the receiver.
 
 \par Unless otherwise specified, any number followed by an 'h' suffix is in hexadecimal, 'b' stands for binary, while no suffix means decimal base is used.
@@ -86,7 +86,7 @@ Device identification register. Constant value of 0Fh.
 \par - IR : type of IR receiver used :
 \par \qquad - 0: 38.4kHz receiver (TSDP34138 and TSDP34338)
 \par \qquad - 1: 57.6kHz receiver (TSDP34156 and TSDP34338)
-\par Currently this register is read only, its value is determined by the switch on the receiver board. It could be made writable, as an additional way to set the sensors to use. Remember that the emitter frequency must match the reciever's frequency, and should be different from the other team's frequency.
+\par Currently this register is read only, its value is determined by the switch on the receiver board. It could be made writable, as an additional way to set the sensors to use. Remember that the emitter frequency must match the receiver's frequency, and should be different from the other team's frequency.
 
 \subsection{RAW\_DATA1 (02h), RAW\_DATA2 (03h)}
 
@@ -137,13 +137,13 @@ Device identification register. Constant value of 0Fh.
 \subsection{Emitter code}
 \indent \par The code of the Attiny85 on the emitter simply consists in generating two signals, a 38.7/57.6kHz square signal (that we will call the carrier even though we are not modulating it), and lower frequency signal, the envelop.
 \par Both signal are generated thanks to hardware timers (and not software, this would not be reliable enough). The carrier is generated on PB0 thanks to TIMER0. The envelop is generated on PB1 thanks to TIMER1. An external AND gate then mixes the signals.
-\par Choosing the envelop was somewhat tricky, because of the automatic gain control (AGC) filters in the TSDP34... See Vishay's application note about this. Because of the AGC, we had to switch to the TSDP341.. series. Remember that the envelop is the signal we will get on the reciever (only inverted).
+\par Choosing the envelop was somewhat tricky, because of the automatic gain control (AGC) filters in the TSDP34... See Vishay's application note about this. Because of the AGC, we had to switch to the TSDP341.. series. Remember that the envelop is the signal we will get on the receiver (only inverted).
 \par In order not to trigger the AGC, we had to use a low frequency, low duty cycle signal. Currently, the carrier is a 200Hz signal (5ms period), with a 192us impulsion. This gives a duty cycle of 4\%, and a burst length of 11 cycles at 57.6kHz, 7.4 cycles at 58kHz: this signal will thus remain in the passing zone of the filter.
 \par Note that all these values are theoretical : in practice, we see some variations due to errors in clock speed (we are using the internal clock). However, this errors of a few percents has no consequence on the overall working of the device.
 
-\subsection{Reciever code}
+\subsection{Receiver code}
 
-\indent \par The chip used on the reciever is a Attiny841. For sensor reading, it relies on interrupts: all three interrupts (INT0, PCINT0 and PCINT1) are used, each for reading one multiplexer. The code simply sets the multiplexer, enables interrupts, wait at least 5.2ms, disable interrupts, looks at the result then starts again with the next sensor (we loop through the tree sensors on each multiplexer).
+\indent \par The chip used on the receiver is a Attiny841. For sensor reading, it relies on interrupts: all three interrupts (INT0, PCINT0 and PCINT1) are used, each for reading one multiplexer. The code simply sets the multiplexer, enables interrupts, wait at least 5.2ms, disable interrupts, looks at the result then starts again with the next sensor (we loop through the tree sensors on each multiplexer).
 \par During the interrupt, we time how long the low pulse is, and, if it is close enough to 200us, we consider we have received a valid signal.
 \par In parallel with this code for reading the sensors, I2C communication must be handled. This is done thanks to hardware I2C slave support of the chip, enabled in software thanks to the library WireS, provided by orangkucing on gitlab (https://github.com/orangkucing/WireS). Note that the source code of WireS (WireS.cpp and WireS.h) is already in the folder CodeRecepteur: thus, there is no need to install this library, as it gets compiled with the source code.
 \par During the main loop, an array called I2CRegisters is filled with the correct data. WireS then works with handlers, and return the corresponding array value to the master. Currently all I2C registers are read-only, so no write operation is ever perform, but the write handler is present nonetheless. Note also that sequential reading is supported : as long as the master acknowledges the transaction, the register number is incremented (with loopback at the end), and the next value is returned.

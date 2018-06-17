@@ -5,7 +5,7 @@
 \usepackage[english]{babel}
 \usepackage{hyperref}
 \usepackage{wrapfig}
-\usepackage{graphicx} 
+\usepackage{graphicx}
 
 \hypersetup{
   colorlinks   = true, %Colours links instead of ugly boxes
@@ -39,17 +39,17 @@ The design and key ideas for this beacon originate from the (French) website \hr
 The principle of IR beacons is to have an emitter on the other robot, sending IR light in all directions, and a belt of IR received on our robot. This receivers are placed such that their field of view overlap, giving 360$360^\circ$ field of view to the robot. I designed it with the following constraints or goals in mind:
 
  - the receiver and emitter have to fit in an 8x8cm square (the old size of the beacons - in 2018 the size was increased to 10cm and will probably remain that way for the following years, so they could theoretically be bigger now).
- 
+
  - the emitter will work from a 9V battery (this being an easy to use energy source: it can be integrated easily in the size limitation given by Eurobot, and have a longer operating live than, say, small 1.5V/3V batteries).
- 
- - the reciever should be as easy to use as possible from the user point of view. As such, individual sensor handling should be done internally, and available data sent back through a serial bus (in this design, I2C, but this can be changed easily).
- 
+
+ - the receiver should be as easy to use as possible from the user point of view. As such, individual sensor handling should be done internally, and available data sent back through a serial bus (in this design, I2C, but this can be changed easily).
+
  - sensor reading (and thus detection) should be as fast as possible.
- 
+
  - the receiver should work from 3.3V or 5V source (to work with an Arduino just like a Beaglebone/Raspberry Pi).
- 
+
  - the system should be as robust as possible to external light sources, including light from other beacons (i.e. we still want this to work, even if the other team is using a similar, or completely identical, system). This last point was not treated at all in the Totofweb website.
- 
+
  \subsection{Light source and sensor}
 
 Obviously, the key point in this system is the actual sensor unit being used. The sensor choosen are TSDP34... units from Vishay. These sensors are binary IR receiver, with a band-pass filter. What this means is that the sensors are tuned to respond only to a specific frequency: if enough IR light pulsed at that frequency is seen, the sensor activates and outputs 0. Otherwise, it outputs 1. This band-pass filter is the key feature: indeed, what we want to achieve with this system is detecting at long ranges (say 1m) an IR led, with a sensor that is not shield from outer light. If it were sensible to the full frequency spectrum, then our poor little LED would be completely lost in ambient light, from the sun or artificial lightning. Specifically, in Eurobot, projector light can fool common IR distance sensor, like the IR Sharp family (which measures a distance based on the reflection of an integrated IR LED on a surface). Here, this continuous light is completely ignored, to focus only on the specified frequency (either 38.4kHz or 57.6kHz, much higher that anything we might get from artificial lightning for example). \emph{Note: in this whole document, I will use light frequency to designate this (eletrical) frequency of the pulsed signal (in the range of a few kHz), and not the true LED frequency (i.e. light wavelength of 950nm, resulting in a frequency of around 315THz), as the latter is anyway fixed by the LED.} I indeed quite successfully tested this sensor by exposing it to direct incandescent lightning, or to sunlight. In fact, you too have probably already tested this very sensor: Vishay designs these units to be used in IR remote controls, typically for TVs. The remote has just a single led, pulsed at the given frequency, that sends a serial message about the button being pressed, and the TV has a receiver. Granted that the remote is aligned with the receiver, one can hope to control their TV from meters away, despite room lightning and (up to a certain point) sunlight.
@@ -81,7 +81,7 @@ Figure \ref{fVishayApplication} from the application note gives the response of 
   \label{fVishayApplication}
 \end{figure}
 
-As one can see, continuous signals are always suppressed, while single pulse will always pass. The problem is what happens in between: in this (large) hysteresis region, the behavior depends on the history: if we travel from the lower regions, it will continue to pass, while if we travel from the higher regions, it won't pass. 
+As one can see, continuous signals are always suppressed, while single pulse will always pass. The problem is what happens in between: in this (large) hysteresis region, the behavior depends on the history: if we travel from the lower regions, it will continue to pass, while if we travel from the higher regions, it won't pass.
 
 What is draw on the diagram are the regions were various UART sequences are placed. However, we won't be using UART here (unlike what is done in totofweb), because the result would be quite slow. Indeed, most microcontroller only have one serial port, which means that we will have to read the receivers one by one. Going around the whole beacon would thus take some time. To be faster, we can instead send a single pulse, whose length we will read using interrupts. This gives a simpler and faster protocol. On this diagram, a periodic pulse is simply a point, defined by its pulse length and duty cycle. The hysteresis phenomenon I described was linked to the fact that, at first, this point was situated in the hysteresis region. What as guess was happening was that, as we got closer, some signal would end up passing the AGC (it only applies a gain, but probably can't completely kill a signal). Then the AGC would actually "latch" on that signal and remain active as we go further away, until the signal is completely lost, at which point the AGC goes to rest again (what isn't mentioned in this diagram is that this AGC is a dynamic filter, changing state with time).
 
@@ -93,7 +93,7 @@ This is one final thing to consider in the design: we've seen that this sensor i
 
 Thus, we feared that we might meet a team which operates at the same frequency as us, and that their emitter, placed on top of our receiver, would "blind" it. Either the receiver could be constantly active, thus blocking the robot from the start (it would believe to be surrounded), or on the contrary, given that the pulse they send would be unlikely to match ours, the robot would ignore it and, as both signals mix, would also ignore our own beacon (the sum of both signals would result in pulse not longer being of the desired length), and thus be blind. Whatever happens, it would be bad ! To prevent this, the simplest solution appears to have the ability to change on the fly the frequency ! That way, we can simply ask the other team before the match what frequency they are using (or test it if they don't know), and change it if we use the same. This is quite easy for the emitter (it's the same LED, we just change the control signal sent by the microcontroller). For the receiver, as the filter are fixed for a given version, it requires soldering twice as many receiver: every "odd" receiver would work at 38.4kHz (TSDP341380, and every even one at 57.6kHz (TSDP34156).
 
- We might have actually overestimated this problem, as in fact, if we place our own beacon on top of the receiver, it does not see it (light is emitted parallel to the receiver, not towards it). One could imagine some form of mechanical cap isolating it from the other beacon... Still, we have not guarantee that the issue would not appear with another beacon design, where perhaps they use stronger LEDs (reflection of the light on the wall can make it possible, if enough current is send through the LEDs, to "see" the receiver even without direct exposition). 
+ We might have actually overestimated this problem, as in fact, if we place our own beacon on top of the receiver, it does not see it (light is emitted parallel to the receiver, not towards it). One could imagine some form of mechanical cap isolating it from the other beacon... Still, we have not guarantee that the issue would not appear with another beacon design, where perhaps they use stronger LEDs (reflection of the light on the wall can make it possible, if enough current is send through the LEDs, to "see" the receiver even without direct exposition). Given how critical a failure of this beacon might be for the robot, I think it is important to try to mitigate it as much as possible. Unfortunately, it seems the considered solution does not work very well, as the frequencies are too close (the 57kHz sensor sees the 38.4kHw signal - see DesignUpdate.md for more information).
 
 \section{Emitter design}
 
@@ -113,7 +113,7 @@ Thus, 3 IR sensors can be read at the same time: the number of sensors will be a
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.7\textwidth]{Figures/IC_Documentation_Reciever.pdf}
+  \includegraphics[width=0.7\textwidth]{Figures/IC_Documentation_Receiver.pdf}
   \caption{Annotated receiver PCB giving sensor placement (green) and multiplexer indexing (blue).}
   \label{fReceiverDoc}
 \end{figure}

@@ -1,7 +1,7 @@
 /*
-  Code for the attiny841 on the infrared reciever.
-  This code loops between all inputs, reads the value, and stores the results. It also fills I2C registers for communication with the master processor on the robot. 
-  See IC_Documentation_Reciever.pdf for information about sensor number.
+  Code for the attiny841 on the infrared receiver.
+  This code loops between all inputs, reads the value, and stores the results. It also fills I2C registers for communication with the master processor on the robot.
+  See IC_Documentation_receiver.pdf for information about sensor number.
   Note: the device supports sequential reading of I2C registers.
   Note: the I2C interface exposed through WireS.h is quite crude. As a result, complexe I2C transactions will not be supported. The device can handle :
    - A write with register address, stop, and reading of a single register.
@@ -10,7 +10,7 @@
 */
 
 // Hardware I2C slave library.
-#include "WireS.h" 
+#include "WireS.h"
 
 // Pinout
 #define LED 5
@@ -59,7 +59,7 @@ unsigned char currentRegister;
 // Array to be filled with data to return to the master.
 unsigned char I2CRegisters[N_REGISTERS];
 
-void setup() 
+void setup()
 {
   pinMode(LED, OUTPUT);
   pinMode(A, OUTPUT);
@@ -72,12 +72,12 @@ void setup()
   pinMode(3, INPUT);
   pinMode(1, INPUT);
   pinMode(0, INPUT);
-  
+
   // Blink led to show startup.
   digitalWrite(LED, HIGH);
   delay(1000);
   digitalWrite(LED, LOW);
-    
+
   //Activate interrupt on port A and B, as well as INT0.
   GIMSK = 0b01110000;
   //Set INT0 to trigger interrupt on every pin change.
@@ -120,11 +120,11 @@ bool addressHandler(uint16_t address, uint8_t startCount)
 void receiveHandler(size_t numBytes)
 {
   // Get register address.
-  if (Wire.available()) 
+  if (Wire.available())
   {
     // Update register pointer.
     currentRegister = Wire.read();
-    for(size_t i = 1; i < numBytes && Wire.available(); i++) 
+    for(size_t i = 1; i < numBytes && Wire.available(); i++)
     {
       byte data = Wire.read();
       // All registers are read-only: do nothing with the data.
@@ -160,9 +160,9 @@ void computeObstacleRegisters()
 	int robotSize[2] = {0,0};
 	int robotPos[2] = {0,0};
 	int currentSize = 0;
-	// Loop around reciever, find the size of each block, and keep the largest two.
+	// Loop around receiver, find the size of each block, and keep the largest two.
 	int start = 0;
-	// If the first reciever sees something, loop backward to beginning of block.
+	// If the first receiver sees something, loop backward to beginning of block.
 	if(I2CRegisters[RAW_DATA1] % 2 == 1)
 	{
 		if(I2CRegisters[RAW_DATA2] == 1)
@@ -217,13 +217,13 @@ void computeObstacleRegisters()
 		robotPos[1] = robotPos[0] + newSize;
 		robotSize[0] = newSize;
 		robotPos[0] = robotPos[0] - newSize;
-		
+
 		if(robotPos[0] < 0)
 			robotPos[0] += 2 * N_SENSORS;
 		if(robotPos[1] >= -2 * N_SENSORS)
 			robotPos[1] -= 2 * N_SENSORS;
 	}
-	
+
 	// Format this into the registers
 	I2CRegisters[ROBOT1_POS] = (robotSize[0] << 5) + robotPos[0];
 	I2CRegisters[ROBOT2_POS] = (robotSize[1] << 5) + robotPos[1];
@@ -299,7 +299,7 @@ ISR(PCINT1_vect)
   interruptionTriggered(2);
 }
 
-void loop() 
+void loop()
 {
   //Reset interrupt variables.
   for(int i = 0; i< 3; i++)
@@ -310,8 +310,8 @@ void loop()
   // Choose sensor to read.
   currentSensor = (currentSensor + 1) % 3;
   setMultiplexer(currentFrequency, currentSensor);
-  
-  // Start interrupt (i.e. listen to IR reciever).
+
+  // Start interrupt (i.e. listen to IR receiver).
   sei();
   // Sleep 11ms : this enables us to read 2 sensor pulse, thus have more stable readings (only one is required to trigger the sensor).
   delayMicroseconds(11000);
@@ -323,7 +323,7 @@ void loop()
     digitalWrite(LED, HIGH);
   else
     digitalWrite(LED, LOW);
-   
+
    // Set raw register values.
    for(int i = 0; i < 3; i++)
    {

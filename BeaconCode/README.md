@@ -1,8 +1,8 @@
 # BeaconCode
 
-Both the emitter and the reciever contain an ATTiny microcontroller (respectively ATTiny85 and ATTiny841):
+Both the emitter and the receiver contain an ATTiny microcontroller (respectively ATTiny85 and ATTiny841):
  - the emitter code generates the signal sent to the LEDs.
- - the reciever code reads individual recievers, processes the results to get an estimate of robot position, and handles
+ - the receiver code reads individual receivers, processes the results to get an estimate of robot position, and handles
  I2C communication.
 
 The choice of Atmel microcontroller was done because they are easy to flash: all that one needs is a simple Arduino board !
